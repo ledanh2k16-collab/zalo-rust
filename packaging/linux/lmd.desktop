@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=LMD
+GenericName=Instant Messaging Client
+Comment=LMD - Lightweight native Zalo Desktop client written in Rust (Jujutsu Kaisen Edition)
+Exec=lmd --gui
+Icon=lmd
+Terminal=false
+Categories=Network;InstantMessaging;Chat;VideoConference;
+Keywords=zalo;chat;messenger;voip;rust;lmd;
+StartupWMClass=lmd
+
