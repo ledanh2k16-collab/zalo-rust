@@ -173,8 +173,8 @@ mod win_tray {
             let len = GetWindowTextW(hwnd, title_buf.as_mut_ptr(), 128);
             if len > 0 {
                 let title = String::from_utf16_lossy(&title_buf[..len as usize]);
-                // Main eframe window title is "LMD"
-                if title.contains("LMD") {
+                // Main eframe window title is "TEZADIS" (or "LMD")
+                if title.contains("TEZADIS") || title.contains("LMD") {
                     *(lparam as *mut HWND) = hwnd;
                     return 0; // Found, stop enumeration
                 }

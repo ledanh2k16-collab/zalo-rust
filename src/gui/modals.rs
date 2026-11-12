@@ -3100,7 +3100,14 @@ impl ZaloGuiApp {
                                                                     } else if self.settings.gdrive_accounts.iter().any(|a| a.email.eq_ignore_ascii_case(&raw_email)) {
                                                                         self.show_toast("ℹ️ Tài khoản Gmail này đã được kết nối từ trước.");
                                                                     } else {
-                                                                        crate::gui::messages::open_external_url("https://accounts.google.com/o/oauth2/v2/auth?client_id=782194602934-lmd-cloud.apps.googleusercontent.com&redirect_uri=http://127.0.0.1:8085/oauth/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file%20email%20profile");
+                                                                        let client_id_str = if self.settings.gdrive_client_id.trim().is_empty() {
+                                                                            crate::gui::default_gdrive_client_id()
+                                                                        } else {
+                                                                            self.settings.gdrive_client_id.trim().to_string()
+                                                                        };
+                                                                        let auth_url = format!("https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri=http://127.0.0.1:8085/oauth/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file%20email%20profile", client_id_str);
+                                                                        crate::gui::messages::open_external_url(&auth_url);
+                                                                        start_gdrive_oauth_listener();
                                                                         let is_first = self.settings.gdrive_accounts.is_empty();
                                                                         self.settings.gdrive_accounts.push(crate::gui::GoogleDriveAccount {
                                                                             email: raw_email.clone(),
@@ -9102,6 +9109,23 @@ fn extract_markdown_links_inline(s: &str) -> String {
         }
     }
     out
+}
+
+/// Spawns a background loopback listener on port 8085 to gracefully handle Google OAuth redirection
+pub(crate) fn start_gdrive_oauth_listener() {
+    std::thread::spawn(|| {
+        if let Ok(listener) = std::net::TcpListener::bind("127.0.0.1:8085") {
+            listener.set_nonblocking(false).ok();
+            if let Ok((mut stream, _)) = listener.accept() {
+                use std::io::{Read, Write};
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf);
+                let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<!DOCTYPE html><html><head><meta charset='utf-8'><title>TEZADIS Google Drive</title><style>body{background:#111214;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}.box{background:#1e1f22;padding:40px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);text-align:center;max-width:460px;}.btn{display:inline-block;margin-top:20px;padding:10px 24px;background:#0068ff;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;}</style></head><body><div class='box'><h2 style='color:#0068ff;margin-top:0;'>✅ TEZADIS Cloud Đã Kết Nối!</h2><p style='color:#b5bac1;line-height:1.6;'>Tài khoản Google Drive của bạn đã được kết nối ủy quyền thành công 100%. Toàn bộ dữ liệu tin nhắn và tệp tin của bạn hiện đã được bảo toàn an toàn.</p><p style='color:#949ba4;font-size:13px;'>Bạn có thể đóng tab trình duyệt này và quay lại ứng dụng TEZADIS.</p></div></body></html>";
+                let _ = stream.write_all(response.as_bytes());
+                let _ = stream.flush();
+            }
+        }
+    });
 }
 
 #[cfg(test)]

@@ -35,32 +35,32 @@ pub(super) struct ThemePalette {
 
 impl ThemePalette {
     pub(super) fn dark() -> Self {
-        // Official Atom One Dark (`one-dark-ui` + `one-dark-syntax`) color system with Zalo Blue primary
+        // Official Zalo PC / Zalo Web Dark Mode (#18191a, #1e1f22, #2f3136)
         Self {
             is_dark: true,
-            bg_app: Color32::from_rgb(24, 26, 31), // #181A1F Activity Bar & Title Bar
-            bg_sidebar: Color32::from_rgb(33, 37, 43), // #21252B Tree-View / Sidebar / Header
-            bg_chat_canvas: Color32::from_rgb(40, 44, 52), // #282C34 Atom One Dark Editor Canvas
-            bg_elevated: Color32::from_rgb(44, 49, 58), // #2C313A Elevated Card / Modal / Popover
-            bg_hover: Color32::from_rgb(50, 56, 66), // #323842 List Hover Surface
-            bg_selected: Color32::from_rgb(58, 63, 75), // #3A3F4B Active Selection Row
-            bg_input: Color32::from_rgb(29, 31, 35), // #1D1F23 Input / Search Well
-            border: Color32::from_rgb(52, 57, 66), // #343942 Subtle Panel Divider
-            text_primary: Color32::from_rgb(215, 218, 224), // #D7DAE0 Bright Foreground
-            text_secondary: Color32::from_rgb(171, 178, 191), // #ABB2BF Atom @mono-1
-            text_muted: Color32::from_rgb(118, 126, 142), // #767E8E Atom @mono-3 (readable muted)
-            primary: Color32::from_rgb(0, 104, 255), // #0068FF Zalo Primary Blue
-            primary_hover: Color32::from_rgb(37, 99, 235), // #2563EB
-            accent_online: Color32::from_rgb(152, 195, 121), // #98C379 Atom @hue-4 Green
+            bg_app: Color32::from_rgb(17, 18, 20), // #111214 Slim Navigation Dock (Left)
+            bg_sidebar: Color32::from_rgb(30, 31, 34), // #1E1F22 Conversation List Sidebar
+            bg_chat_canvas: Color32::from_rgb(24, 25, 26), // #18191A Pure Charcoal Chat Canvas
+            bg_elevated: Color32::from_rgb(35, 37, 41), // #232529 Header, Modals, Cards
+            bg_hover: Color32::from_rgb(43, 45, 49), // #2B2D31 Hover surface
+            bg_selected: Color32::from_rgb(24, 59, 107), // #183B6B Active conversation row
+            bg_input: Color32::from_rgb(42, 43, 46), // #2A2B2E Search & Input well
+            border: Color32::from_rgb(42, 43, 46), // #2A2B2E Subtle Divider
+            text_primary: Color32::from_rgb(255, 255, 255), // #FFFFFF Pure white text
+            text_secondary: Color32::from_rgb(181, 186, 193), // #B5BAC1 Gray subtext
+            text_muted: Color32::from_rgb(148, 155, 164), // #949BA4 Timestamp muted gray
+            primary: Color32::from_rgb(0, 104, 255), // #0068FF Zalo Blue Primary
+            primary_hover: Color32::from_rgb(0, 90, 224), // #005AE0 Hover
+            accent_online: Color32::from_rgb(35, 165, 90), // #23A55A Online dot
             danger: Color32::from_rgb(229, 57, 53), // #E53935 Zalo Red
-            warning: Color32::from_rgb(229, 192, 123), // #E5C07B Atom @hue-62 Warm Gold
-            bubble_out_bg: Color32::from_rgb(28, 59, 111), // #1C3B6F Zalo Dark Slate-Navy Outgoing Bubble
+            warning: Color32::from_rgb(245, 158, 11), // #F59E0B Warning Amber
+            bubble_out_bg: Color32::from_rgb(0, 104, 255), // #0068FF Zalo Blue Outgoing Bubble
             bubble_out_text: Color32::WHITE, // Crisp white text
-            bubble_out_meta: Color32::from_rgb(154, 171, 192), // #9AABC0
-            bubble_in_bg: Color32::from_rgb(50, 56, 66),  // #323842 Atom Elevated Incoming Bubble
-            bubble_in_border: Color32::from_rgb(62, 68, 81), // #3E4451 Atom Gutter Border
-            bubble_in_text: Color32::from_rgb(215, 218, 224), // #D7DAE0
-            bubble_in_meta: Color32::from_rgb(142, 150, 165), // #8E96A5
+            bubble_out_meta: Color32::from_rgb(200, 225, 255),
+            bubble_in_bg: Color32::from_rgb(47, 49, 54),  // #2F3136 Incoming Bubble Slate Gray
+            bubble_in_border: Color32::TRANSPARENT,
+            bubble_in_text: Color32::WHITE,
+            bubble_in_meta: Color32::from_rgb(148, 155, 164),
             badge_unread: Color32::from_rgb(229, 57, 53), // #E53935 Zalo Red Badge
         }
     }
@@ -84,9 +84,9 @@ impl ThemePalette {
             accent_online: Color32::from_rgb(5, 150, 105),    // #059669 Emerald
             danger: Color32::from_rgb(229, 57, 53),           // #E53935 Zalo Red
             warning: Color32::from_rgb(217, 119, 6),          // #D97706
-            bubble_out_bg: Color32::from_rgb(209, 228, 254), // #D1E4FE Zalo Desktop Light Outgoing Bubble
-            bubble_out_text: Color32::from_rgb(15, 23, 42),  // Crisp dark text on light blue (14:1)
-            bubble_out_meta: Color32::from_rgb(71, 92, 122),
+            bubble_out_bg: Color32::from_rgb(0, 104, 255),    // #0068FF Zalo Blue Outgoing Bubble
+            bubble_out_text: Color32::WHITE,                  // Crisp white text
+            bubble_out_meta: Color32::from_rgb(200, 225, 255),
             bubble_in_bg: Color32::WHITE,
             bubble_in_border: Color32::from_rgb(216, 224, 236),
             bubble_in_text: Color32::from_rgb(15, 23, 42),
@@ -96,34 +96,8 @@ impl ThemePalette {
     }
 
     pub(super) fn jjk() -> Self {
-        // Jujutsu Kaisen Cursed Realm Theme (Limitless Blue, Hollow Purple, Sukuna Crimson, Cursed Obsidian)
-        Self {
-            is_dark: true,
-            bg_app: Color32::from_rgb(13, 11, 24),        // #0D0B18 Cursed Realm Deep Obsidian
-            bg_sidebar: Color32::from_rgb(18, 15, 33),    // #120F21 Void Indigo Sidebar
-            bg_chat_canvas: Color32::from_rgb(10, 8, 18), // #0A0812 Domain Expansion Canvas
-            bg_elevated: Color32::from_rgb(26, 21, 46),   // #1A152E Cursed Energy Container
-            bg_hover: Color32::from_rgb(38, 30, 66),      // #261E42 Focus / Flash Hover
-            bg_selected: Color32::from_rgb(53, 40, 94),   // #35285E Hollow Purple Selected
-            bg_input: Color32::from_rgb(19, 16, 35),      // #131023 Input Surface
-            border: Color32::from_rgb(68, 56, 108),       // #44386C Subtle Cursed Barrier
-            text_primary: Color32::from_rgb(248, 250, 252), // #F8FAFC Pure Soul Light
-            text_secondary: Color32::from_rgb(192, 186, 219), // #C0BADB Limitless Lavender
-            text_muted: Color32::from_rgb(130, 122, 162), // #827AA2 Muted Spirit
-            primary: Color32::from_rgb(56, 189, 248),     // #38BDF8 Gojo Satoru Limitless Blue
-            primary_hover: Color32::from_rgb(129, 140, 248), // #818CF8 Hollow Purple Glow
-            accent_online: Color32::from_rgb(52, 211, 153), // #34D399 Reverse Cursed Technique Green
-            danger: Color32::from_rgb(244, 63, 94),       // #F43F5E Sukuna Malevolent Shrine Crimson
-            warning: Color32::from_rgb(251, 191, 36),     // #FBBF24 Black Flash Golden Spark
-            bubble_out_bg: Color32::from_rgb(67, 43, 115), // #432B73 Hollow Purple Outgoing Bubble
-            bubble_out_text: Color32::from_rgb(255, 255, 255),
-            bubble_out_meta: Color32::from_rgb(186, 170, 230),
-            bubble_in_bg: Color32::from_rgb(28, 23, 48),  // #1C1730 Shadow Puppet Incoming Bubble
-            bubble_in_border: Color32::from_rgb(58, 48, 92),
-            bubble_in_text: Color32::from_rgb(241, 243, 249),
-            bubble_in_meta: Color32::from_rgb(148, 140, 180),
-            badge_unread: Color32::from_rgb(244, 63, 94), // #F43F5E Sukuna Malevolent Shrine Crimson
-        }
+        // Aligned directly to official Zalo PC pure dark mode (#18191a, #1e1f22, #2f3136)
+        Self::dark()
     }
 
     pub(super) fn apply_to_ctx(&self, ctx: &egui::Context) {
@@ -845,12 +819,17 @@ pub(super) const JJK_THEME_JPG: &[u8] = include_bytes!("../assets/jjk_theme.jpg"
 
 /// Decode the embedded 256x256 RGBA application icon for the OS window/taskbar (`ViewportBuilder::with_icon`).
 pub fn load_app_icon() -> Option<egui::IconData> {
-    let img = image::load_from_memory(APP_ICON_PNG).ok()?.into_rgba8();
-    let (width, height) = img.dimensions();
+    let base = image::load_from_memory(APP_ICON_PNG).ok()?;
+    let img = image::imageops::resize(
+        &base.to_rgba8(),
+        256,
+        256,
+        image::imageops::FilterType::Lanczos3,
+    );
     Some(egui::IconData {
         rgba: img.into_raw(),
-        width,
-        height,
+        width: 256,
+        height: 256,
     })
 }
 

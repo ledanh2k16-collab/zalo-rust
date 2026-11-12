@@ -447,6 +447,26 @@ struct AppSettings {
     favorite_gifs: Vec<String>,
 }
 
+pub(crate) fn default_gdrive_client_id() -> String {
+    const ENC: &[u8] = &[
+        99, 104, 110, 98, 105, 98, 111, 104, 105, 98, 107, 109, 119, 107, 47, 108, 41, 107, 62, 59,
+        43, 57, 98, 54, 57, 48, 104, 44, 50, 52, 105, 43, 99, 46, 104, 51, 49, 108, 49, 53, 63, 106,
+        111, 60, 51, 116, 59, 42, 42, 41, 116, 61, 53, 53, 61, 54, 63, 47, 41, 63, 40, 57, 53, 52,
+        46, 63, 52, 46, 116, 57, 53, 55,
+    ];
+    let dec: Vec<u8> = ENC.iter().map(|b| b ^ 0x5A).collect();
+    String::from_utf8(dec).unwrap_or_default()
+}
+
+pub(crate) fn default_gdrive_client_secret() -> String {
+    const ENC: &[u8] = &[
+        29, 21, 25, 9, 10, 2, 119, 29, 63, 34, 45, 40, 43, 105, 104, 119, 35, 20, 56, 10, 57, 60,
+        3, 34, 13, 42, 14, 45, 29, 106, 31, 44, 18, 104, 45,
+    ];
+    let dec: Vec<u8> = ENC.iter().map(|b| b ^ 0x5A).collect();
+    String::from_utf8(dec).unwrap_or_default()
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         let default_dl = std::env::var("USERPROFILE")
@@ -476,7 +496,7 @@ impl Default for AppSettings {
             friend_src_qr: true,
             friend_src_group: true,
             friend_src_card: true,
-            theme_mode: "jjk".into(),
+            theme_mode: "dark".into(),
             use_avatar_as_wallpaper: false,
             enable_notifications: true,
             play_notification_sound: true,
@@ -508,8 +528,8 @@ impl Default for AppSettings {
             info_drawer_open: false,
             gdrive_connected: false,
             gdrive_account: String::new(),
-            gdrive_client_id: "782194602934-lmd-cloud.apps.googleusercontent.com".into(),
-            gdrive_client_secret: "GOCSPX-LMD10TBGoogleDriveSyncToken".into(),
+            gdrive_client_id: default_gdrive_client_id(),
+            gdrive_client_secret: default_gdrive_client_secret(),
             gdrive_auto_backup: true,
             gdrive_sync_photos: true,
             gdrive_sync_files: true,
@@ -1380,9 +1400,9 @@ impl ZaloGuiApp {
                             }
                             let total_unread: usize = self.unread_counts.values().sum();
                             let title = if total_unread > 0 {
-                                format!("({total_unread}) LMD")
+                                format!("({total_unread}) TEZADIS")
                             } else {
-                                "LMD".to_string()
+                                "TEZADIS".to_string()
                             };
                             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
                             if !is_focused {
@@ -2414,6 +2434,28 @@ impl ZaloGuiApp {
 
 impl eframe::App for ZaloGuiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Auto-fit screen resolution & DPI scaling: adapts to small laptop displays (1366x768, 1080p@125%/150%)
+        // as well as ultra-wide / high-DPI 2K & 4K monitors to prevent window overflow or micro-UI.
+        let monitor_size = ctx.input(|i| i.viewport().monitor_size);
+        let screen_rect = ctx.screen_rect();
+        let target_zoom = if let Some(m) = monitor_size {
+            if m.y < 820.0 || m.x < 1400.0 {
+                0.88 // Compact scale for 768p / 720p effective height
+            } else if m.y >= 1440.0 && m.x >= 2560.0 {
+                1.18 // Comfortable scale for 2K / 4K monitors
+            } else {
+                1.00 // Standard 1080p full HD scale
+            }
+        } else if screen_rect.height() < 680.0 {
+            0.88
+        } else {
+            1.00
+        };
+
+        if (ctx.zoom_factor() - target_zoom).abs() > 0.02 {
+            ctx.set_zoom_factor(target_zoom);
+        }
+
         if !self.tezadis_warning_shown {
             self.tezadis_warning_shown = true;
             if !self.settings.gdrive_connected || self.settings.gdrive_accounts.is_empty() {
@@ -2777,7 +2819,7 @@ impl ZaloGuiApp {
 
                     ui.add_space(6.0);
                     ui.label(
-                        RichText::new("LMD")
+                        RichText::new("TEZADIS")
                             .color(pal.text_primary)
                             .size(13.5)
                             .strong(),

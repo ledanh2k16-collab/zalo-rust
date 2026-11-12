@@ -102,8 +102,7 @@ impl ZaloGuiApp {
 
                     // Navigation Icon 1: Tin nhắn (All / Active Chat)
                     let is_msg_nav = !self.feed_modal_open
-                        && !self.contacts_view_open
-                        && self.thread_filter == ThreadFilter::All;
+                        && !self.contacts_view_open;
                     let (nav1_rect, nav1_resp) =
                         ui.allocate_exact_size(Vec2::new(42.0, 42.0), Sense::click());
                     if is_msg_nav {
@@ -697,70 +696,100 @@ impl ZaloGuiApp {
                             }
                             ui.add_space(10.0);
 
-                            // Clean Underline Segmented Tabs (`Tất cả`, `Cá nhân`, `Nhóm`) + `Đã ghim (1)`
+                            // Standard Zalo Tab Bar: `Tất cả` · `Chưa đọc` · `Phân loại ⌄`
                             ui.horizontal(|ui| {
-                                ui.spacing_mut().item_spacing.x = 16.0;
-                                let group_tab_cnt =
-                                    self.threads.iter().filter(|t| t.is_group).count();
-                                let group_tab_label = if group_tab_cnt > 0 {
-                                    format!("Nhóm ({group_tab_cnt})")
+                                ui.spacing_mut().item_spacing.x = 18.0;
+
+                                // 1. Tab "Tất cả"
+                                let all_active = self.thread_filter == ThreadFilter::All;
+                                let all_text = "Tất cả";
+                                let all_text_w = ui.fonts(|f| f.layout_no_wrap(all_text.to_string(), FontId::proportional(12.5), pal.text_primary).size().x);
+                                let (all_rect, all_resp) = ui.allocate_exact_size(Vec2::new(all_text_w + 4.0, 26.0), Sense::click());
+                                let all_fg = if all_active { pal.primary_hover } else if all_resp.hovered() { pal.text_primary } else { pal.text_secondary };
+                                ui.painter().text(
+                                    Pos2::new(all_rect.center().x, all_rect.top() + 8.0),
+                                    egui::Align2::CENTER_CENTER,
+                                    all_text,
+                                    FontId::proportional(12.5),
+                                    all_fg,
+                                );
+                                if all_active {
+                                    let line_y = all_rect.bottom() - 1.0;
+                                    ui.painter().line_segment(
+                                        [Pos2::new(all_rect.left(), line_y), Pos2::new(all_rect.right(), line_y)],
+                                        Stroke::new(2.2_f32, pal.primary),
+                                    );
+                                }
+                                if all_resp.on_hover_cursor(CursorIcon::PointingHand).clicked() {
+                                    self.thread_filter = ThreadFilter::All;
+                                }
+
+                                // 2. Tab "Chưa đọc"
+                                let unread_active = self.thread_filter == ThreadFilter::Unread;
+                                let total_unread_threads: usize = self.threads.iter().filter(|t| {
+                                    let from_map = self.unread_counts.get(&t.id).copied().unwrap_or(0);
+                                    let from_set = t.unread.unread_ids.len();
+                                    let marked = if t.unread.marked_unread { 1 } else { 0 };
+                                    from_map.max(from_set).max(marked) > 0
+                                }).count();
+                                let unread_text = if total_unread_threads > 0 {
+                                    format!("Chưa đọc ({total_unread_threads})")
                                 } else {
-                                    "Nhóm".to_string()
+                                    "Chưa đọc".to_string()
                                 };
-                                for (filter, label) in [
-                                    (ThreadFilter::All, "Tất cả".to_string()),
-                                    (ThreadFilter::Direct, "Cá nhân".to_string()),
-                                    (ThreadFilter::Groups, group_tab_label),
-                                    (ThreadFilter::GoogleDrive, "Google Drive".to_string()),
-                                ] {
-                                    let active = self.thread_filter == filter;
-                                    let text_w = ui.fonts(|f| {
-                                        f.layout_no_wrap(
-                                            label.clone(),
-                                            FontId::proportional(12.5),
-                                            pal.text_primary,
-                                        )
-                                        .size()
-                                        .x
-                                    });
-                                    let (tab_rect, tab_resp) = ui.allocate_exact_size(
-                                        Vec2::new(text_w + 4.0, 26.0),
-                                        Sense::click(),
+                                let unread_text_w = ui.fonts(|f| f.layout_no_wrap(unread_text.clone(), FontId::proportional(12.5), pal.text_primary).size().x);
+                                let (unread_rect, unread_resp) = ui.allocate_exact_size(Vec2::new(unread_text_w + 4.0, 26.0), Sense::click());
+                                let unread_fg = if unread_active { pal.primary_hover } else if unread_resp.hovered() { pal.text_primary } else { pal.text_secondary };
+                                ui.painter().text(
+                                    Pos2::new(unread_rect.center().x, unread_rect.top() + 8.0),
+                                    egui::Align2::CENTER_CENTER,
+                                    &unread_text,
+                                    FontId::proportional(12.5),
+                                    unread_fg,
+                                );
+                                if unread_active {
+                                    let line_y = unread_rect.bottom() - 1.0;
+                                    ui.painter().line_segment(
+                                        [Pos2::new(unread_rect.left(), line_y), Pos2::new(unread_rect.right(), line_y)],
+                                        Stroke::new(2.2_f32, pal.primary),
                                     );
-                                    let fg = if active {
-                                        pal.primary_hover
-                                    } else if tab_resp.hovered() {
-                                        pal.text_primary
-                                    } else {
-                                        pal.text_secondary
-                                    };
-                                    ui.painter().text(
-                                        Pos2::new(tab_rect.center().x, tab_rect.top() + 8.0),
-                                        egui::Align2::CENTER_CENTER,
-                                        &label,
-                                        FontId::proportional(12.5),
-                                        fg,
-                                    );
-                                    if active {
-                                        let line_y = tab_rect.bottom() - 1.0;
-                                        ui.painter().line_segment(
-                                            [
-                                                Pos2::new(tab_rect.left(), line_y),
-                                                Pos2::new(tab_rect.right(), line_y),
-                                            ],
-                                            Stroke::new(2.2_f32, pal.primary),
-                                        );
-                                    }
-                                    if tab_resp.on_hover_cursor(CursorIcon::PointingHand).clicked()
-                                    {
-                                        self.thread_filter = filter;
-                                        if filter == ThreadFilter::Groups {
-                                            if let Some((gidx, gthread)) = self
-                                                .threads
-                                                .iter()
-                                                .enumerate()
-                                                .find(|(_, t)| t.is_group)
-                                            {
+                                }
+                                if unread_resp.on_hover_cursor(CursorIcon::PointingHand).clicked() {
+                                    self.thread_filter = ThreadFilter::Unread;
+                                }
+
+                                // 3. Tab "Phân loại ⌄"
+                                let cat_active = matches!(
+                                    self.thread_filter,
+                                    ThreadFilter::Direct | ThreadFilter::Groups | ThreadFilter::GoogleDrive
+                                );
+                                let cat_label = match self.thread_filter {
+                                    ThreadFilter::Direct => "Cá nhân ⌄",
+                                    ThreadFilter::Groups => "Nhóm ⌄",
+                                    ThreadFilter::GoogleDrive => "Cloud ⌄",
+                                    _ => "Phân loại ⌄",
+                                };
+                                let cat_resp = ui.menu_button(
+                                    RichText::new(cat_label)
+                                        .size(12.5)
+                                        .color(if cat_active { pal.primary_hover } else { pal.text_secondary }),
+                                    |ui| {
+                                        ui.set_min_width(170.0);
+                                        ui.spacing_mut().item_spacing = Vec2::new(0.0, 3.0);
+                                        ui.spacing_mut().button_padding = Vec2::new(10.0, 6.0);
+                                        if ui.button(RichText::new("📁 Tất cả").size(12.5)).clicked() {
+                                            self.thread_filter = ThreadFilter::All;
+                                            ui.close_menu();
+                                        }
+                                        if ui.button(RichText::new("👤 Cá nhân").size(12.5)).clicked() {
+                                            self.thread_filter = ThreadFilter::Direct;
+                                            ui.close_menu();
+                                        }
+                                        let group_cnt = self.threads.iter().filter(|t| t.is_group).count();
+                                        let group_label = if group_cnt > 0 { format!("👥 Nhóm ({group_cnt})") } else { "👥 Nhóm".to_string() };
+                                        if ui.button(RichText::new(group_label).size(12.5)).clicked() {
+                                            self.thread_filter = ThreadFilter::Groups;
+                                            if let Some((gidx, gthread)) = self.threads.iter().enumerate().find(|(_, t)| t.is_group) {
                                                 let gid = gthread.id.clone();
                                                 self.selected_thread_index = gidx;
                                                 if let Some(tx) = WORKER_TX.get() {
@@ -771,45 +800,21 @@ impl ZaloGuiApp {
                                                     });
                                                 }
                                             }
-                                            if group_tab_cnt == 0
-                                                || self.threads.iter().any(|t| {
-                                                    t.is_group
-                                                        && crate::chat::is_generic_thread_name(
-                                                            &t.name,
-                                                        )
-                                                })
-                                            {
-                                                if let Some(tx) = WORKER_TX.get() {
-                                                    let _ = tx.send(WorkerCmd::RefreshThreads);
-                                                }
-                                            }
+                                            ui.close_menu();
                                         }
-                                    }
+                                        if ui.button(RichText::new("☁️ Cloud của tôi").size(12.5)).clicked() {
+                                            self.thread_filter = ThreadFilter::GoogleDrive;
+                                            ui.close_menu();
+                                        }
+                                    },
+                                ).response;
+                                if cat_active {
+                                    let line_y = cat_resp.rect.bottom() - 1.0;
+                                    ui.painter().line_segment(
+                                        [Pos2::new(cat_resp.rect.left(), line_y), Pos2::new(cat_resp.rect.right(), line_y)],
+                                        Stroke::new(2.2_f32, pal.primary),
+                                    );
                                 }
-
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    let pinned_cnt = self
-                                        .threads
-                                        .iter()
-                                        .filter(|t| {
-                                            t.name.contains("Cloud của tôi")
-                                                || t.presentation.pinned
-                                                || self.settings.pinned_threads.contains(&t.id)
-                                                || crate::chat::is_pinned_in_list(
-                                                    &t.id,
-                                                    t.is_group,
-                                                    &self.settings.pinned_threads,
-                                                )
-                                        })
-                                        .count();
-                                    if pinned_cnt > 0 {
-                                        ui.label(
-                                            RichText::new(format!("Đã ghim ({pinned_cnt})"))
-                                                .size(11.0)
-                                                .color(pal.text_muted),
-                                        );
-                                    }
-                                });
                             });
                         }
                     });
@@ -902,6 +907,12 @@ impl ZaloGuiApp {
                             }
                             let pass_filter = match self.thread_filter {
                                 ThreadFilter::All => true,
+                                ThreadFilter::Unread => {
+                                    let from_map = self.unread_counts.get(&t.id).copied().unwrap_or(0);
+                                    let from_set = t.unread.unread_ids.len();
+                                    let marked = if t.unread.marked_unread { 1 } else { 0 };
+                                    from_map.max(from_set).max(marked) > 0
+                                }
                                 ThreadFilter::Direct => !t.is_group,
                                 ThreadFilter::Groups => t.is_group,
                                 ThreadFilter::GoogleDrive => t.name.contains("Cloud") || t.preview.contains("Drive") || t.preview.contains("Cloud"),
@@ -5985,20 +5996,35 @@ impl ZaloGuiApp {
                                     .rounding(Rounding::same(4.0))
                                     .min_size(Vec2::new(220.0, 32.0));
                                 if ui.add(login_btn).on_hover_cursor(CursorIcon::PointingHand).clicked() {
+                                    let client_id = if self.settings.gdrive_client_id.trim().is_empty() {
+                                        crate::gui::default_gdrive_client_id()
+                                    } else {
+                                        self.settings.gdrive_client_id.trim().to_string()
+                                    };
+                                    let auth_url = format!("https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri=http://127.0.0.1:8085/oauth/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file%20email%20profile", client_id);
+                                    crate::gui::messages::open_external_url(&auth_url);
+                                    crate::gui::modals::start_gdrive_oauth_listener();
                                     if self.settings.gdrive_account.trim().is_empty() {
-                                        self.settings.gdrive_account = "leminhdanh.work@gmail.com".to_string();
+                                        self.settings.gdrive_account = "user@gmail.com".to_string();
                                     }
                                     self.settings.gdrive_connected = true;
                                     self.settings.save();
-                                    self.show_toast("Đã kết nối tài khoản Google Drive (10 TB) thành công!");
+                                    self.show_toast("Đã mở trang ủy quyền Google Drive thành công!");
                                 }
-                                let browser_btn = egui::Button::new(RichText::new("🌐 Đăng nhập qua trình duyệt").size(12.0).color(pal.text_secondary))
+                                let browser_btn = egui::Button::new(RichText::new("🌐 Mở xác thực trình duyệt").size(12.0).color(pal.text_secondary))
                                     .fill(pal.bg_input)
                                     .stroke(Stroke::new(1.0_f32, pal.border))
                                     .rounding(Rounding::same(4.0))
                                     .min_size(Vec2::new(170.0, 32.0));
                                 if ui.add(browser_btn).on_hover_cursor(CursorIcon::PointingHand).clicked() {
-                                    crate::gui::messages::open_external_url("https://accounts.google.com");
+                                    let client_id = if self.settings.gdrive_client_id.trim().is_empty() {
+                                        crate::gui::default_gdrive_client_id()
+                                    } else {
+                                        self.settings.gdrive_client_id.trim().to_string()
+                                    };
+                                    let auth_url = format!("https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri=http://127.0.0.1:8085/oauth/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.file%20email%20profile", client_id);
+                                    crate::gui::messages::open_external_url(&auth_url);
+                                    crate::gui::modals::start_gdrive_oauth_listener();
                                 }
                             });
                         });

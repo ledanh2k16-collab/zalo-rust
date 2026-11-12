@@ -17,6 +17,7 @@ pub(super) enum StickerTab {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ThreadFilter {
     All,
+    Unread,
     Direct,
     Groups,
     GoogleDrive,

@@ -2302,9 +2302,9 @@ pub(super) fn render_chat_bubble(
                 } else if !pal.is_dark {
                     Stroke::new(1.0_f32, Color32::from_rgb(186, 214, 255))
                 } else {
-                    Stroke::new(1.0_f32, Color32::from_rgb(53, 76, 104))
+                    Stroke::NONE
                 };
-                let rounding = Rounding::same(4.0);
+                let rounding = Rounding::same(8.0);
 
                 let mut card_action = None;
                 let mut quote_action = None;
@@ -2442,7 +2442,7 @@ pub(super) fn render_chat_bubble(
             } else {
                 Stroke::new(1.0_f32, pal.bubble_in_border)
             };
-            let rounding = Rounding::same(4.0);
+            let rounding = Rounding::same(8.0);
 
             ui.vertical(|ui| {
                 ui.set_max_width(total_bubble_w);

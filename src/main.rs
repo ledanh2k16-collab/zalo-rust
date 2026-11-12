@@ -197,7 +197,18 @@ async fn main() -> Result<()> {
     // Open the native GUI window IMMEDIATELY without blocking on network requests!
     // Background worker in `gui.rs` handles `get_server_info`, `get_friends`, and `poll_new_messages`.
     if force_gui || (!force_tui && !force_qr && !args.iter().any(|a| a.starts_with("--phone"))) {
-        println!("🚀 Đang khởi chạy giao diện đồ họa LMD (egui)…");
+        println!("🚀 Đang khởi chạy giao diện đồ họa TEZADIS (egui)…");
+        #[cfg(target_os = "windows")]
+        {
+            #[link(name = "shell32")]
+            extern "system" {
+                fn SetCurrentProcessExplicitAppUserModelID(AppID: *const u16) -> i32;
+            }
+            let aumid: Vec<u16> = "tezadis.app\0".encode_utf16().collect();
+            unsafe {
+                let _ = SetCurrentProcessExplicitAppUserModelID(aumid.as_ptr());
+            }
+        }
         #[cfg(target_os = "windows")]
         if dev_mode {
             #[link(name = "kernel32")]
@@ -209,11 +220,11 @@ async fn main() -> Result<()> {
             }
         }
         let mut viewport = eframe::egui::ViewportBuilder::default()
-            .with_app_id("lmd")
+            .with_app_id("tezadis.app")
             .with_decorations(false)
-            .with_inner_size([1020.0, 700.0])
+            .with_inner_size([1000.0, 670.0])
             .with_min_inner_size([480.0, 360.0])
-            .with_title("LMD");
+            .with_title("TEZADIS");
         if let Some(icon) = gui::load_app_icon() {
             viewport = viewport.with_icon(std::sync::Arc::new(icon));
         }
@@ -236,7 +247,7 @@ async fn main() -> Result<()> {
 
         let app_session = s;
         let res = eframe::run_native(
-            "LMD",
+            "TEZADIS",
             native_options,
             Box::new(move |cc| {
                 Ok(Box::new(gui::ZaloGuiApp::new(
