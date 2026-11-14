@@ -311,10 +311,36 @@ jobs:
         run: |
           cargo build --release --locked --bin lmd
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Copy-Item target\release\lmd.exe "dist\lmd-$($env:VERSION)-portable-windows-x86_64.exe"
+          Copy-Item target\release\lmd.exe "dist\lmd-$($env:VERSION)-portable-windows-x86_64.exe" -Force
+          Copy-Item target\release\lmd.exe "dist\tezadis-$($env:VERSION)-portable-windows-x86_64.exe" -Force
           Compress-Archive -Path "dist\lmd-$($env:VERSION)-portable-windows-x86_64.exe","README.md","LICENSE-MIT","LICENSE-APACHE" -DestinationPath "dist\lmd-$($env:VERSION)-portable-windows-x86_64.zip" -Force
-          iscc "/DMyAppVersion=$($env:VERSION)" packaging\windows\installer.iss
-          Move-Item dist\lmd-setup-windows-x86_64.exe "dist\lmd-$($env:VERSION)-setup-windows-x86_64.exe" -Force
+          
+          # Locate ISCC.exe on GitHub Actions Windows runner or install via Chocolatey
+          $iscc = if (Get-Command iscc -ErrorAction SilentlyContinue) {
+            "iscc"
+          } elseif (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") {
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          } elseif (Test-Path "$env:ProgramFiles\Inno Setup 6\ISCC.exe") {
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          } else {
+            Write-Host "Installing Inno Setup via Chocolatey..."
+            choco install innosetup -y --no-progress
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          Write-Host "Compiling Windows installer with: $iscc"
+          & $iscc "/DMyAppVersion=$($env:VERSION)" packaging\windows\installer.iss
+
+          # Handle both dist\setup.exe and dist\lmd-setup-windows-x86_64.exe outputs safely
+          if (Test-Path dist\setup.exe) {
+            Copy-Item dist\setup.exe "dist\tezadis-$($env:VERSION)-setup-windows-x86_64.exe" -Force
+            Move-Item dist\setup.exe "dist\lmd-$($env:VERSION)-setup-windows-x86_64.exe" -Force
+          } elseif (Test-Path dist\lmd-setup-windows-x86_64.exe) {
+            Copy-Item dist\lmd-setup-windows-x86_64.exe "dist\tezadis-$($env:VERSION)-setup-windows-x86_64.exe" -Force
+            Move-Item dist\lmd-setup-windows-x86_64.exe "dist\lmd-$($env:VERSION)-setup-windows-x86_64.exe" -Force
+          } else {
+            Write-Error "Inno Setup failed to generate an installer executable in dist/"
+            exit 1
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: lmd-windows-exe
