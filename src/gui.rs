@@ -683,6 +683,7 @@ pub struct ZaloGuiApp {
     jjk_theme_texture: Option<TextureHandle>,
     is_boss_hidden: bool,
     tezadis_warning_shown: bool,
+    dpi_initialized: bool,
     sticker_store_packs: Vec<crate::chat::StickerPackInfo>,
     sticker_store_loading: bool,
     sticker_store_filter: String,
@@ -956,6 +957,7 @@ impl ZaloGuiApp {
             jjk_theme_texture: load_jjk_theme_texture(&cc.egui_ctx),
             is_boss_hidden: false,
             tezadis_warning_shown: false,
+            dpi_initialized: false,
             sticker_store_packs: Vec::new(),
             sticker_store_loading: false,
             sticker_store_filter: String::new(),
@@ -2434,26 +2436,33 @@ impl ZaloGuiApp {
 
 impl eframe::App for ZaloGuiApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Auto-fit screen resolution & DPI scaling: adapts to small laptop displays (1366x768, 1080p@125%/150%)
-        // as well as ultra-wide / high-DPI 2K & 4K monitors to prevent window overflow or micro-UI.
-        let monitor_size = ctx.input(|i| i.viewport().monitor_size);
-        let screen_rect = ctx.screen_rect();
-        let target_zoom = if let Some(m) = monitor_size {
-            if m.y < 820.0 || m.x < 1400.0 {
-                0.88 // Compact scale for 768p / 720p effective height
-            } else if m.y >= 1440.0 && m.x >= 2560.0 {
-                1.18 // Comfortable scale for 2K / 4K monitors
-            } else {
-                1.00 // Standard 1080p full HD scale
+        // Auto-fit screen resolution & DPI scaling: runs once on startup
+        // Uses native OS metrics to avoid recursive zoom/relayout oscillation.
+        if !self.dpi_initialized {
+            self.dpi_initialized = true;
+            #[cfg(target_os = "windows")]
+            {
+                #[link(name = "user32")]
+                extern "system" {
+                    fn GetSystemMetrics(nIndex: i32) -> i32;
+                }
+                let screen_h = unsafe { GetSystemMetrics(1) }; // SM_CYSCREEN
+                if screen_h > 0 && screen_h <= 768 {
+                    ctx.set_zoom_factor(0.88);
+                } else if screen_h >= 1440 {
+                    ctx.set_zoom_factor(1.15);
+                }
             }
-        } else if screen_rect.height() < 680.0 {
-            0.88
-        } else {
-            1.00
-        };
-
-        if (ctx.zoom_factor() - target_zoom).abs() > 0.02 {
-            ctx.set_zoom_factor(target_zoom);
+            #[cfg(not(target_os = "windows"))]
+            {
+                if let Some(m) = ctx.input(|i| i.viewport().monitor_size) {
+                    if m.y < 800.0 {
+                        ctx.set_zoom_factor(0.88);
+                    } else if m.y >= 1440.0 {
+                        ctx.set_zoom_factor(1.15);
+                    }
+                }
+            }
         }
 
         if !self.tezadis_warning_shown {
