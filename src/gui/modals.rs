@@ -322,7 +322,7 @@ impl ZaloGuiApp {
                             close_menu = true;
                         }
                         let upd_lbl = format!(
-                            "{}  Giới thiệu & Bản quyền LMD (v{})",
+                            "{}  Giới thiệu & Bản quyền TEZADIS (v{})",
                             lucide::INFO,
                             env!("CARGO_PKG_VERSION")
                         );
@@ -496,42 +496,24 @@ impl ZaloGuiApp {
                         pv_param: *mut WinRect,
                         f_win_ini: u32,
                     ) -> i32;
-                    fn GetDC(hwnd: usize) -> usize;
-                    fn ReleaseDC(hwnd: usize, hdc: usize) -> i32;
-                }
-                #[link(name = "gdi32")]
-                extern "system" {
-                    fn GetDeviceCaps(hdc: usize, index: i32) -> i32;
                 }
                 let mut work = WinRect::default();
                 let ok = unsafe { SystemParametersInfoW(0x0030, 0, &mut work, 0) };
                 if ok != 0 && work.right > work.left && work.bottom > work.top {
-                    let hdc = unsafe { GetDC(0) };
-                    let dpi_x = if hdc != 0 {
-                        let d = unsafe { GetDeviceCaps(hdc, 88) };
-                        unsafe { ReleaseDC(0, hdc) };
-                        d
-                    } else {
-                        96
-                    };
-                    let scale = if dpi_x > 0 {
-                        (dpi_x as f32 / 96.0).max(1.0)
-                    } else {
-                        ctx.pixels_per_point().max(1.0)
-                    };
-                    let right_pt = work.right as f32 / scale;
-                    let bottom_pt = work.bottom as f32 / scale;
+                    let ppp = ctx.pixels_per_point().max(0.5);
+                    let right_pt = work.right as f32 / ppp;
+                    let bottom_pt = work.bottom as f32 / ppp;
                     return Pos2::new(
-                        (right_pt - popup_w - 18.0).max(16.0),
-                        (bottom_pt - popup_h - 18.0).max(16.0),
+                        (right_pt - popup_w - 14.0).max(10.0),
+                        (bottom_pt - popup_h - 14.0).max(10.0),
                     );
                 }
             }
             if let Some(mon) = ctx.input(|i| i.viewport().monitor_size) {
                 if mon.x > popup_w && mon.y > popup_h {
                     return Pos2::new(
-                        (mon.x - popup_w - 18.0).max(16.0),
-                        (mon.y - popup_h - 48.0).max(16.0),
+                        (mon.x - popup_w - 14.0).max(10.0),
+                        (mon.y - popup_h - 14.0).max(10.0),
                     );
                 }
             }
@@ -555,7 +537,7 @@ impl ZaloGuiApp {
                 let corner_pos = get_desktop_bottom_right_pos(ctx, popup_w, popup_h);
                 let vp_id = egui::ViewportId::from_hash_of("zalo_corner_notification_popup");
                 let builder = egui::ViewportBuilder::default()
-                    .with_title("LMD — Tin nhắn mới")
+                    .with_title("TEZADIS — Tin nhắn mới")
                     .with_decorations(false)
                     .with_always_on_top()
                     .with_taskbar(false)
@@ -607,6 +589,62 @@ impl ZaloGuiApp {
                 ctx.show_viewport_immediate(vp_id, builder, |vp_ctx, _class| {
                     pal.apply_to_ctx(vp_ctx);
                     vp_ctx.request_repaint_after(Duration::from_millis(40));
+                    #[cfg(target_os = "windows")]
+                    {
+                        #[repr(C)]
+                        #[derive(Default, PartialEq, Eq)]
+                        struct WinRect {
+                            left: i32,
+                            top: i32,
+                            right: i32,
+                            bottom: i32,
+                        }
+                        #[link(name = "user32")]
+                        extern "system" {
+                            fn SystemParametersInfoW(
+                                ui_action: u32,
+                                ui_param: u32,
+                                pv_param: *mut WinRect,
+                                f_win_ini: u32,
+                            ) -> i32;
+                            fn FindWindowW(class_name: *const u16, window_name: *const u16) -> usize;
+                            fn GetWindowRect(hwnd: usize, rect: *mut WinRect) -> i32;
+                            fn SetWindowPos(
+                                hwnd: usize,
+                                hwnd_insert_after: isize,
+                                x: i32,
+                                y: i32,
+                                cx: i32,
+                                cy: i32,
+                                flags: u32,
+                            ) -> i32;
+                        }
+                        use std::os::windows::ffi::OsStrExt;
+                        let title_wide: Vec<u16> = std::ffi::OsStr::new("TEZADIS — Tin nhắn mới")
+                            .encode_wide()
+                            .chain(std::iter::once(0))
+                            .collect();
+                        let hwnd = unsafe { FindWindowW(std::ptr::null(), title_wide.as_ptr()) };
+                        if hwnd != 0 {
+                            let mut work = WinRect::default();
+                            let ok = unsafe { SystemParametersInfoW(0x0030, 0, &mut work, 0) };
+                            if ok != 0 && work.right > work.left && work.bottom > work.top {
+                                let ppp = vp_ctx.pixels_per_point().max(0.5);
+                                let phys_w = (popup_w * ppp).round() as i32;
+                                let phys_h = (popup_h * ppp).round() as i32;
+                                let phys_x = (work.right - phys_w - 14).max(10);
+                                let phys_y = (work.bottom - phys_h - 14).max(10);
+                                let mut cur_rect = WinRect::default();
+                                unsafe { GetWindowRect(hwnd, &mut cur_rect) };
+                                if cur_rect.left != phys_x || cur_rect.top != phys_y {
+                                    // HWND_TOPMOST = -1, SWP_NOACTIVATE = 0x0010, SWP_SHOWWINDOW = 0x0040
+                                    unsafe {
+                                        SetWindowPos(hwnd, -1, phys_x, phys_y, phys_w, phys_h, 0x0010 | 0x0040);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if vp_ctx.input(|i| i.pointer.has_pointer()) {
                         paused = true;
                     }
@@ -648,7 +686,7 @@ impl ZaloGuiApp {
                                     ui.painter().circle_filled(dr.center(), 5.0, pal.primary);
                                 }
                                 ui.label(
-                                    RichText::new("LMD · Tin nhắn mới")
+                                    RichText::new("TEZADIS · Tin nhắn mới")
                                         .size(11.5)
                                         .color(pal.primary)
                                         .strong(),
@@ -1461,7 +1499,7 @@ impl ZaloGuiApp {
                                         SettingsTab::Notifications => "Cài đặt thông báo",
                                         SettingsTab::Messages => "Cài đặt tin nhắn",
                                         SettingsTab::Utilities => "Tiện ích & Gợi ý",
-                                        SettingsTab::About => "Giới thiệu & Bản quyền LMD",
+                                        SettingsTab::About => "Giới thiệu & Bản quyền TEZADIS",
                                     };
                                     ui.label(
                                         RichText::new(tab_title)
@@ -3310,7 +3348,7 @@ impl ZaloGuiApp {
                                                         ui.add_space(8.0);
                                                         ui.vertical(|ui| {
                                                             ui.horizontal(|ui| {
-                                                                ui.label(RichText::new("LMD Desktop Client").size(17.0).color(pal.text_primary).strong());
+                                                                ui.label(RichText::new("TEZADIS Desktop Client").size(17.0).color(pal.text_primary).strong());
                                                                 egui::Frame::none()
                                                                     .fill(pal.primary.linear_multiply(0.20))
                                                                     .rounding(Rounding::same(6.0))
@@ -4120,7 +4158,7 @@ impl ZaloGuiApp {
                                 ui.add(
                                     egui::Label::new(
                                         RichText::new(
-                                            "💡 Tính năng hẹn giờ gửi tin: Soạn nội dung và chọn thời gian gửi. Khi tới giờ hẹn, ứng dụng LMD sẽ tự động gửi tin nhắn chính xác đến người nhận.",
+                                            "💡 Tính năng hẹn giờ gửi tin: Soạn nội dung và chọn thời gian gửi. Khi tới giờ hẹn, ứng dụng TEZADIS sẽ tự động gửi tin nhắn chính xác đến người nhận.",
                                         )
                                         .size(12.5)
                                         .color(warn_fg)

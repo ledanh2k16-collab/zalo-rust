@@ -3474,7 +3474,7 @@ impl ZaloGuiApp {
                                             }
                                         } else {
                                             format!(
-                                                "🚀 Đã có bản cập nhật mới LMD v{} trên GitHub Releases!",
+                                                "🚀 Đã có bản cập nhật mới TEZADIS v{} trên GitHub Releases!",
                                                 upd.latest_version
                                             )
                                         };
@@ -6086,7 +6086,7 @@ impl ZaloGuiApp {
                                     });
                                 });
                                 ui.add_space(8.0);
-                                ui.label(RichText::new("Toàn bộ lịch sử tin nhắn 1-1, nhóm và tệp đính kèm được đồng bộ tự động lên thư mục Google Drive 'LMD_Zalo_Backups'.").size(12.0).color(pal.text_secondary));
+                                ui.label(RichText::new("Toàn bộ lịch sử tin nhắn 1-1, nhóm và tệp đính kèm được đồng bộ tự động lên thư mục Google Drive 'TEZADIS_Zalo_Backups'.").size(12.0).color(pal.text_secondary));
                                 ui.add_space(12.0);
                                 ui.horizontal(|ui| {
                                     let backup_now = egui::Button::new(RichText::new("💾 Sao lưu toàn bộ tin nhắn ngay").size(12.0).color(Color32::WHITE).strong())
@@ -6111,9 +6111,9 @@ impl ZaloGuiApp {
                                 ui.label(RichText::new("Các bản sao lưu gần nhất:").size(12.5).color(pal.text_primary).strong());
                                 ui.add_space(6.0);
                                 for (fname, fdate, fsize) in [
-                                    ("lmd_backup_messages_2026_11_10.db", "Hôm nay, 14:30", "45.2 MB"),
-                                    ("lmd_backup_messages_2026_11_09.db", "Hôm qua, 23:59", "44.8 MB"),
-                                    ("lmd_backup_messages_2026_11_08.db", "08/11/2026, 23:59", "43.1 MB"),
+                                    ("tezadis_backup_messages_2026_11_10.db", "Hôm nay, 14:30", "45.2 MB"),
+                                    ("tezadis_backup_messages_2026_11_09.db", "Hôm qua, 23:59", "44.8 MB"),
+                                    ("tezadis_backup_messages_2026_11_08.db", "08/11/2026, 23:59", "43.1 MB"),
                                 ] {
                                     ui.horizontal(|ui| {
                                         ui.label(RichText::new(format!("🗄️ {fname}")).size(12.0).color(pal.text_primary).strong());
